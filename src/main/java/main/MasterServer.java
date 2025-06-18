@@ -68,7 +68,14 @@ public class MasterServer {
         }
     }
 
-    private List<MapResult> dispatchMapTasks(FilterSpec fs) {
+    public void registerWorker(WorkerInfo w) {
+        synchronized (workers) {
+            workers.add(w);
+        }
+        System.out.println("Worker registrado: " + w);
+    }
+
+    public List<MapResult> dispatchMapTasks(FilterSpec fs) {
         List<MapResult> res = new ArrayList<>();
         for (WorkerInfo w : workers) {
             try { res.add(new MapTask(fs, w).execute()); }
@@ -77,7 +84,7 @@ public class MasterServer {
         return res;
     }
 
-    private List<MapResult> dispatchSalesReports(String type) {
+    public List<MapResult> dispatchSalesReports(String type) {
         List<MapResult> res = new ArrayList<>();
         for (WorkerInfo w : workers) {
             try { res.add(new ReportTask(type, w).execute()); }
@@ -86,7 +93,7 @@ public class MasterServer {
         return res;
     }
 
-    private void broadcast(Message msg) {
+    public void broadcast(Message msg) {
         for (WorkerInfo w : workers) {
             try (Socket s = new Socket(w.getHost(), w.getPort());
                  ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream())) {
