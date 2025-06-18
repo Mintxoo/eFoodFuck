@@ -8,7 +8,7 @@ import java.util.*;
  * Prueba de integración: arranca MasterServer y WorkerNode en hilos,
  * luego simula un cliente que envía ADD_RESTAURANT, TASK, SALE, REPORT y RATE.
  */
-public class IntegrationTestMain {
+public class TestMain {
     public static void main(String[] args) throws Exception {
         // Puerto del master y worker
         final int masterPort = 5555;
