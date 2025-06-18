@@ -1,5 +1,6 @@
 package main;
 
+import java.io.Serializable;
 import java.util.Set;
 
 /**
@@ -10,7 +11,8 @@ import java.util.Set;
  * - Estrellas mínimas
  * - Categoría de precio
  */
-public class FilterSpec {
+public class FilterSpec implements Serializable {
+    private static final long serialVersionUID = 1L;
     private static final double RADIUS_KM = 5.0;
 
     private final double latitude;
@@ -41,12 +43,12 @@ public class FilterSpec {
     @Override
     public String toString() {
         return "FilterSpec{" +
-               "lat=" + latitude +
-               ", lon=" + longitude +
-               ", cats=" + foodCategories +
-               ", minStars=" + minStars +
-               ", priceCat=" + priceCategory +
-               ", radiusKm=" + RADIUS_KM +
-               '}';
+                "lat=" + latitude +
+                ", lon=" + longitude +
+                ", cats=" + foodCategories +
+                ", minStars=" + minStars +
+                ", priceCat=" + priceCategory +
+                ", radiusKm=" + RADIUS_KM +
+                '}';
     }
 }
