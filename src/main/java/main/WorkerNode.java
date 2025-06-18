@@ -3,8 +3,7 @@ package main;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Worker que almacena restaurantes, productos y ventas en memoria.
@@ -18,11 +17,14 @@ public class WorkerNode {
     }
 
     public void start(String masterHost, int masterPort) throws Exception {
-        // 1) Registrar en Master
+        // 1) Registrar en Master y esperar confirmación
         try (Socket sock = new Socket(masterHost, masterPort);
-             ObjectOutputStream oos = new ObjectOutputStream(sock.getOutputStream())) {
+             ObjectOutputStream oos = new ObjectOutputStream(sock.getOutputStream());
+             ObjectInputStream ois = new ObjectInputStream(sock.getInputStream())) {
             oos.writeObject(new Message(Message.MessageType.REGISTER, info));
             oos.flush();
+            Message resp = (Message) ois.readObject();
+            System.out.println("Register response from Master: " + resp.getPayload());
         }
         // 2) Escuchar peticiones
         try (ServerSocket server = new ServerSocket(info.getPort())) {
@@ -84,15 +86,14 @@ public class WorkerNode {
                         r.getSales().values().stream().mapToInt(Integer::intValue).sum());
             }
         } else {
-            // product
             for (Restaurant r : restaurants) {
-                r.getSales().forEach((prod, qty) -> mr.addVenta(prod, qty));
+                r.getSales().forEach(mr::addVenta);
             }
         }
         return mr;
     }
 
-    /** Haversine simplificado in‐place */
+    /** Haversine simplificado in‑place */
     private static double haversine(double lat1, double lon1,
                                     double lat2, double lon2) {
         double R = 6371.0088; // km
@@ -106,7 +107,6 @@ public class WorkerNode {
     }
 
     public static void main(String[] args) throws Exception {
-        // args: id host port masterHost masterPort
         WorkerInfo info = new WorkerInfo(args[0], args[1], Integer.parseInt(args[2]));
         String masterHost = args[3];
         int masterPort = Integer.parseInt(args[4]);
