@@ -67,8 +67,9 @@ public class WorkerNode {
 
 
     public synchronized void addRestaurant(Restaurant r) {
+        System.out.println("Worker " + info.getId() + ": addRestaurant invoked para " + r);
         restaurants.add(r);
-        System.out.println("Worker " + info.getId() + ": added restaurant " + r.getName());
+        System.out.println("Worker " + info.getId() + ": current restaurants = " + restaurants);
     }
 
     public synchronized void addProduct(String store, String product, double price) {

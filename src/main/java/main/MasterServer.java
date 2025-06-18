@@ -141,7 +141,9 @@ public class MasterServer {
         sendToWorker(w, new Message(Message.MessageType.RATE, rt));
     }
 
+    // En MasterServer.java, justo al inicio de sendToWorker():
     private void sendToWorker(WorkerInfo w, Message msg) {
+        System.out.println("Master->Worker " + w.getId() + ": enviando " + msg.getType());
         try (Socket s = new Socket(w.getHost(), w.getPort());
              ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream())) {
             oos.writeObject(msg);

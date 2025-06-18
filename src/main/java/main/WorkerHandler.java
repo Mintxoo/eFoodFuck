@@ -21,6 +21,7 @@ public class WorkerHandler implements Runnable {
         ) {
             Message msg;
             while ((msg = (Message) ois.readObject()) != null) {
+                System.out.println("WorkerHandler recibe: " + msg.getType() + " con payload=" + msg.getPayload());
                 switch (msg.getType()) {
                     case ADD_RESTAURANT -> {
                         worker.addRestaurant((Restaurant) msg.getPayload());
