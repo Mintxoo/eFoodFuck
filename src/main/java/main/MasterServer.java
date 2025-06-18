@@ -26,19 +26,29 @@ public class MasterServer {
         }
     }
 
-    private void handleConnection(Socket sock) {
-        try (sock;
-             ObjectInputStream ois = new ObjectInputStream(sock.getInputStream());
-             ObjectOutputStream oos = new ObjectOutputStream(sock.getOutputStream())) {
+    // dentro de MasterServer.java
 
-            Message msg;
-            while ((msg = (Message) ois.readObject()) != null) {
+    private void handleConnection(Socket sock) {
+        try (
+                sock;
+                ObjectInputStream ois = new ObjectInputStream(sock.getInputStream());
+                ObjectOutputStream oos = new ObjectOutputStream(sock.getOutputStream())
+        ) {
+            // Leemos un único mensaje al abrir la conexión
+            Message msg = (Message) ois.readObject();
+
+            // Si es un registro de Worker, lo procesamos y cerramos
+            if (msg.getType() == Message.MessageType.REGISTER) {
+                WorkerInfo w = (WorkerInfo) msg.getPayload();
+                registerWorker(w);
+                oos.writeObject(new Message(Message.MessageType.RESULT, "OK"));
+                oos.flush();
+                return;
+            }
+
+            // En otro caso, atendemos a Manager/Client en bucle
+            do {
                 switch (msg.getType()) {
-                    case REGISTER -> {
-                        WorkerInfo w = (WorkerInfo) msg.getPayload();
-                        registerWorker(w);
-                        oos.writeObject(new Message(Message.MessageType.RESULT, "OK"));
-                    }
                     case ADD_RESTAURANT -> {
                         Restaurant r = (Restaurant) msg.getPayload();
                         addRestaurant(r);
@@ -66,7 +76,7 @@ public class MasterServer {
                         oos.writeObject(new Message(Message.MessageType.RESULT, rr));
                     }
                     case SALE -> {
-                        Object sale = msg.getPayload();
+                        Sale sale = (Sale) msg.getPayload();
                         broadcast(new Message(Message.MessageType.SALE, sale));
                         oos.writeObject(new Message(Message.MessageType.RESULT, "OK"));
                     }
@@ -84,11 +94,16 @@ public class MasterServer {
                     }
                 }
                 oos.flush();
-            }
+                // Leemos siguiente mensaje; EOFException finalizará el bucle
+            } while ((msg = (Message) ois.readObject()) != null);
+
+        } catch (EOFException eof) {
+            // Manager o Client cerró la conexión (esperado)
         } catch (Exception e) {
             System.err.println("Error en conexión: " + e.getMessage());
         }
     }
+
 
     /** Registra un Worker. */
     public void registerWorker(WorkerInfo w) {
