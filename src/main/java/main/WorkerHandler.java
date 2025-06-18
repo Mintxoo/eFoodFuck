@@ -14,10 +14,11 @@ public class WorkerHandler implements Runnable {
 
     @Override
     public void run() {
-        try (socket;
-             ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
-             ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream())) {
-
+        try (
+                socket;
+                ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
+                ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+        ) {
             Message msg;
             while ((msg = (Message) ois.readObject()) != null) {
                 switch (msg.getType()) {
@@ -48,7 +49,7 @@ public class WorkerHandler implements Runnable {
                     case SALE -> {
                         Sale sale = (Sale) msg.getPayload();
                         worker.handleSale(sale);
-                        oos.writeObject(new Message(Message.MessageType.RESULT, "OK"));
+                        // no enviar respuesta para evitar resets
                     }
                     case REPORT -> {
                         String type = (String) msg.getPayload();
