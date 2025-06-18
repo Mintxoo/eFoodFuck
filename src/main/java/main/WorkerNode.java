@@ -14,6 +14,7 @@ public class WorkerNode {
 
     public WorkerNode(WorkerInfo info) {
         this.info = info;
+        loadSampleRestaurants();
     }
 
     public void start(String masterHost, int masterPort) throws Exception {
@@ -37,6 +38,33 @@ public class WorkerNode {
             }
         }
     }
+
+    /**
+     * Inicializa la lista con 5 restaurantes de muestra.
+     */
+    private void loadSampleRestaurants() {
+        restaurants.add(new Restaurant(
+                "PizzaFun", 40.01, 23.01,
+                "pizza", 4.5, PriceCategory.TWO_DOLLARS
+        ));
+        restaurants.add(new Restaurant(
+                "SushiPlace", 39.99, 22.99,
+                "sushi", 4.0, PriceCategory.THREE_DOLLARS
+        ));
+        restaurants.add(new Restaurant(
+                "BurgerSpot", 40.03, 23.03,
+                "burger", 3.5, PriceCategory.ONE_DOLLAR
+        ));
+        restaurants.add(new Restaurant(
+                "PastaHouse", 40.04, 23.04,
+                "pasta", 4.2, PriceCategory.TWO_DOLLARS
+        ));
+        restaurants.add(new Restaurant(
+                "TacoCorner", 40.05, 23.05,
+                "tacos", 4.8, PriceCategory.ONE_DOLLAR
+        ));
+    }
+
 
     public synchronized void addRestaurant(Restaurant r) {
         restaurants.add(r);
