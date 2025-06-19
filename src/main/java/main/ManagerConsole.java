@@ -88,12 +88,11 @@ public class ManagerConsole {
                         if ("all".equals(parts[1])) {
                             System.out.println("Master> " + salesMap);
                         } else {
-                            String category = parts[2];
                             Map<String, Integer> filteredSales = new LinkedHashMap<>();
                             int total = 0;
 
                             for (Map.Entry<String, Integer> entry : salesMap.entrySet()) {
-                                if (entry.getKey().toLowerCase().contains(category.toLowerCase())) {
+                                if (!entry.getKey().equalsIgnoreCase("total")) {
                                     filteredSales.put(entry.getKey(), entry.getValue());
                                     total += entry.getValue();
                                 }
