@@ -145,22 +145,50 @@ public class WorkerNode {
         restaurants.stream()
                 .filter(r -> r.getName().equals(sale.getStoreName()))
                 .findFirst()
-                .ifPresent(r -> sale.getItems().forEach(r::addSale));
+                .ifPresent(r -> {
+                    Map<String, Product> availableProducts = r.getProducts();
+                    for (Map.Entry<String, Integer> item : sale.getItems().entrySet()) {
+                        String productName = item.getKey();
+                        int qty = item.getValue();
+                        if (availableProducts.containsKey(productName)) {
+                            r.addSale(productName, qty);
+                        } else {
+                            System.out.println("Producto no válido: '" + productName + "' no existe en " + r.getName());
+                        }
+                    }
+                });
     }
+
+
 
     public synchronized MapResult handleReport(String type) {
         MapResult mr = new MapResult();
-        if ("food".equals(type)) {
-            for (Restaurant r : restaurants) {
-                mr.addVenta(r.getFoodCategory(),
-                        r.getSales().values().stream().mapToInt(Integer::intValue).sum());
-            }
-        } else {
-            // product
+
+        if ("all".equals(type)) {
             for (Restaurant r : restaurants) {
                 r.getSales().forEach(mr::addVenta);
             }
+        } else if (type.startsWith("food:")) {
+            String foodCat = type.substring("food:".length()).toLowerCase();
+            for (Restaurant r : restaurants) {
+                if (r.getFoodCategory().equalsIgnoreCase(foodCat)) {
+                    int totalSales = r.getSales().values().stream().mapToInt(Integer::intValue).sum();
+                    if (totalSales > 0) {
+                        mr.addVenta(r.getName(), totalSales);
+                    }
+                }
+            }
+        } else if (type.startsWith("product:")) {
+            String product = type.substring("product:".length()).toLowerCase();
+            for (Restaurant r : restaurants) {
+                r.getSales().forEach((productName, quantity) -> {
+                    if (productName.equalsIgnoreCase(product)) {
+                        mr.addVenta(r.getName(), quantity);
+                    }
+                });
+            }
         }
+
         return mr;
     }
 

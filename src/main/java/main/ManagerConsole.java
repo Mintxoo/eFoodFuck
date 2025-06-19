@@ -85,15 +85,15 @@ public class ManagerConsole {
                         Message resp = (Message) ois.readObject();
                         Map<String, Integer> salesMap = (Map<String, Integer>) resp.getPayload();
 
-                        if (parts[1].equals("all")) {
+                        if ("all".equals(parts[1])) {
                             System.out.println("Master> " + salesMap);
                         } else {
                             String category = parts[2];
-                            Map<String, Integer> filteredSales = new HashMap<>();
+                            Map<String, Integer> filteredSales = new LinkedHashMap<>();
                             int total = 0;
 
                             for (Map.Entry<String, Integer> entry : salesMap.entrySet()) {
-                                if (entry.getKey().equalsIgnoreCase(category)) {
+                                if (entry.getKey().toLowerCase().contains(category.toLowerCase())) {
                                     filteredSales.put(entry.getKey(), entry.getValue());
                                     total += entry.getValue();
                                 }
