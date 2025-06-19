@@ -17,8 +17,14 @@ public class MapResult implements Serializable {
     }
 
     public void addRestaurant(Restaurant r) {
-        restaurants.add(r);
+        // Sólo lo añadimos si no existe ya (mismo nombre)
+        boolean exists = restaurants.stream()
+                .anyMatch(existing -> existing.getName().equals(r.getName()));
+        if (!exists) {
+            restaurants.add(r);
+        }
     }
+
 
     public List<Restaurant> getRestaurants() {
         return Collections.unmodifiableList(restaurants);

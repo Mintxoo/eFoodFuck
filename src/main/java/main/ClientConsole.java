@@ -22,15 +22,15 @@ public class ClientConsole {
              BufferedReader console = new BufferedReader(new InputStreamReader(System.in))) {
 
             System.out.println("Conectado a Master en " + host + ":" + port);
-            System.out.println("Comandos: ping, search <lat> <lon> <cats> <minStars> <priceCat>,");
+            System.out.println("Comandos: ping, search <lat> - <lon> - <cats> - <minStars> - <priceCat> (pc opcional),");
             System.out.println("          buy <store> <item:qty,...>, rate <store> <stars>, exit");
 
             String line;
             while ((line = console.readLine()) != null) {
                 if (line.isBlank()) continue;
                 if (line.equalsIgnoreCase("exit")) break;
-                String[] tokens = line.trim().split("\\s+");
-                String cmd = tokens[0].toLowerCase();
+                String[] parts = line.trim().split("\\s+", 2);
+                String cmd = parts[0].toLowerCase();
 
                 switch (cmd) {
                     case "ping":
@@ -38,32 +38,53 @@ public class ClientConsole {
                         break;
 
                     case "search": {
-                        if (tokens.length < 6) {
-                            System.out.println("Uso: search <lat> <lon> <cats> <minStars> <priceCat>");
+                        if (parts.length < 2) {
+                            System.out.println("Uso: search <lat> - <lon> - <cats> - <minStars> - <priceCat> (pc opcional)");
                             continue;
                         }
-                        double lat = Double.parseDouble(tokens[1]);
-                        double lon = Double.parseDouble(tokens[2]);
-                        String[] cats = tokens[3].split(",");
-                        Set<String> catSet = new HashSet<>(Arrays.asList(cats));
-                        int minStars = Integer.parseInt(tokens[4]);
-                        PriceCategory pc = PriceCategory.valueOf(tokens[5]);
-                        FilterSpec fs = new FilterSpec(lat, lon, catSet, minStars, pc);
+                        // split con - permitiendo campos vacíos y trailing
+                        String[] fields = parts[1].split("\\s*-\\s*", -1);
+                        if (fields.length < 4 || fields.length > 5) {
+                            System.out.println("Busq. incompleta, se necesitan de 4 a 5 campos separados por '-'");
+                            continue;
+                        }
+                        // asignar con chequeo de índices
+                        Double lat = null;
+                        Double lon = null;
+                        Set<String> catSet = new HashSet<>();
+                        Integer minStars = null;
+                        PriceCategory pc = null;
+                        if (fields.length >= 1 && !fields[0].isEmpty()) lat = Double.parseDouble(fields[0]);
+                        if (fields.length >= 2 && !fields[1].isEmpty()) lon = Double.parseDouble(fields[1]);
+                        if (fields.length >= 3 && !fields[2].isEmpty()) catSet = new HashSet<>(Arrays.asList(fields[2].split(",")));
+                        if (fields.length >= 4 && !fields[3].isEmpty()) minStars = Integer.parseInt(fields[3]);
+                        if (fields.length == 5 && !fields[4].isEmpty()) pc = PriceCategory.valueOf(fields[4]);
+
+                        // Construir FilterSpec permitiendo priceCategory nulo
+                        FilterSpec fs = new FilterSpec(
+                                lat != null ? lat : 0.0,
+                                lon != null ? lon : 0.0,
+                                catSet,
+                                minStars != null ? minStars : 0,
+                                pc // si es null, en WorkerNode skipPrice = true
+                        );
                         oos.writeObject(new Message(Message.MessageType.TASK, fs));
                         break;
                     }
 
                     case "buy": {
-                        if (tokens.length < 3) {
+                        if (parts.length < 2) {
                             System.out.println("Uso: buy <store> <item:qty,...>");
                             continue;
                         }
-                        String store = tokens[1];
-                        String[] items = tokens[2].split(",");
+                        String[] tokens = parts[1].split("\\s+", 2);
+                        String store = tokens[0];
                         Map<String, Integer> map = new HashMap<>();
-                        for (String it : items) {
-                            String[] kv = it.split(":");
-                            map.put(kv[0], Integer.parseInt(kv[1]));
+                        if (tokens.length > 1) {
+                            for (String it : tokens[1].split(",")) {
+                                String[] kv = it.split(":");
+                                map.put(kv[0], Integer.parseInt(kv[1]));
+                            }
                         }
                         Sale sale = new Sale(store, map);
                         oos.writeObject(new Message(Message.MessageType.SALE, sale));
@@ -71,12 +92,17 @@ public class ClientConsole {
                     }
 
                     case "rate": {
-                        if (tokens.length < 3) {
+                        if (parts.length < 2) {
                             System.out.println("Uso: rate <store> <stars>");
                             continue;
                         }
-                        String store = tokens[1];
-                        int stars = Integer.parseInt(tokens[2]);
+                        String[] tokens = parts[1].split("\\s+");
+                        if (tokens.length < 2) {
+                            System.out.println("Uso: rate <store> <stars>");
+                            continue;
+                        }
+                        String store = tokens[0];
+                        int stars = Integer.parseInt(tokens[1]);
                         Rating rating = new Rating(store, stars);
                         oos.writeObject(new Message(Message.MessageType.RATE, rating));
                         break;
