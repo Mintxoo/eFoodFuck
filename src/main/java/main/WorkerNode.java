@@ -44,37 +44,36 @@ public class WorkerNode {
      */
     private void loadSampleRestaurants() {
         // Restaurantes de muestra
-        Restaurant r1 = new Restaurant("PizzaFun", 40.01, 23.01, "pizza", 4.5, PriceCategory.TWO_DOLLARS);
-        // Productos iniciales
+        // Restaurantes de muestra (coordenadas en un radio de ~5 km desde DEFAULT_LAT, DEFAULT_LON)
+        Restaurant r1 = new Restaurant("PizzaFun", 40.01, 23.01, "pizza", 4.5, PriceCategory.TWO_DOLLARS); // Original (centro)
         r1.addProduct("Margherita", 8.99);
         r1.addProduct("Coke", 1.50);
-        // Valoraciones iniciales
         r1.addRating(5);
         r1.addRating(4);
         restaurants.add(r1);
 
-        Restaurant r2 = new Restaurant("SushiPlace", 39.99, 22.99, "sushi", 4.0, PriceCategory.THREE_DOLLARS);
+        Restaurant r2 = new Restaurant("SushiPlace", 40.01 + 0.02, 23.01 + 0.03, "sushi", 4.0, PriceCategory.THREE_DOLLARS); // ~3 km NE
         r2.addProduct("California Roll", 6.50);
         r2.addProduct("Green Tea", 2.00);
         r2.addRating(4);
         r2.addRating(5);
         restaurants.add(r2);
 
-        Restaurant r3 = new Restaurant("BurgerSpot", 40.03, 23.03, "burger", 3.5, PriceCategory.ONE_DOLLAR);
+        Restaurant r3 = new Restaurant("BurgerSpot", 40.01 - 0.025, 23.01 + 0.015, "burger", 3.5, PriceCategory.ONE_DOLLAR); // ~2 km SE
         r3.addProduct("Cheeseburger", 5.99);
         r3.addProduct("Fries", 2.50);
         r3.addRating(3);
         r3.addRating(4);
         restaurants.add(r3);
 
-        Restaurant r4 = new Restaurant("PastaHouse", 40.04, 23.04, "pasta", 4.2, PriceCategory.TWO_DOLLARS);
+        Restaurant r4 = new Restaurant("PastaHouse", 40.01 - 0.03, 23.01 - 0.02, "pasta", 4.2, PriceCategory.TWO_DOLLARS); // ~3.6 km SW
         r4.addProduct("Spaghetti Bolognese", 9.99);
         r4.addProduct("Garlic Bread", 2.99);
         r4.addRating(4);
         r4.addRating(5);
         restaurants.add(r4);
 
-        Restaurant r5 = new Restaurant("TacoCorner", 40.05, 23.05, "tacos", 4.8, PriceCategory.ONE_DOLLAR);
+        Restaurant r5 = new Restaurant("TacoCorner", 40.01 + 0.015, 23.01 - 0.035, "tacos", 4.8, PriceCategory.ONE_DOLLAR); // ~3.8 km NW
         r5.addProduct("Beef Taco", 3.99);
         r5.addProduct("Salsa", 0.99);
         r5.addRating(5);
