@@ -22,7 +22,9 @@ public class ManagerConsole {
             System.out.println("Comandos: addRest <nombre> <lat> <lon> <categoria> <ratingInicial> <priceCat>");
             System.out.println("          addProd <store> <producto> <precio>");
             System.out.println("          delProd <store> <producto>");
-            System.out.println("          salesReport");
+            System.out.println("          salesReport food <FoodCategory>");
+            System.out.println("          salesReport product <ProductCategory>");
+            System.out.println("          salesReport all");
             System.out.println("          exit");
 
             String line;
@@ -68,8 +70,39 @@ public class ManagerConsole {
                         break;
                     }
                     case "salesreport": {
-                        oos.writeObject(new Message(Message.MessageType.REPORT, "product"));
-                        break;
+                        String reportType;
+                        if (parts.length == 2 && "all".equals(parts[1])) {
+                            reportType = "all";
+                        } else if (parts.length == 3 && ("food".equals(parts[1]) || "product".equals(parts[1]))) {
+                            reportType = parts[1] + ":" + parts[2];
+                        } else {
+                            System.out.println("Uso: salesReport food <FoodCategory> | product <ProductCategory> | all");
+                            continue;
+                        }
+                        oos.writeObject(new Message(Message.MessageType.REPORT, reportType));
+                        oos.flush();
+
+                        Message resp = (Message) ois.readObject();
+                        Map<String, Integer> salesMap = (Map<String, Integer>) resp.getPayload();
+
+                        if (parts[1].equals("all")) {
+                            System.out.println("Master> " + salesMap);
+                        } else {
+                            String category = parts[2];
+                            Map<String, Integer> filteredSales = new HashMap<>();
+                            int total = 0;
+
+                            for (Map.Entry<String, Integer> entry : salesMap.entrySet()) {
+                                if (entry.getKey().equalsIgnoreCase(category)) {
+                                    filteredSales.put(entry.getKey(), entry.getValue());
+                                    total += entry.getValue();
+                                }
+                            }
+
+                            filteredSales.put("total", total);
+                            System.out.println("Master> " + filteredSales);
+                        }
+                        continue;
                     }
                     default:
                         System.out.println("Comando desconocido: " + cmd);
@@ -84,4 +117,3 @@ public class ManagerConsole {
         }
     }
 }
-
