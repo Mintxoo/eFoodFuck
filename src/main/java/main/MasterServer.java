@@ -190,13 +190,22 @@ public class MasterServer {
     public void broadcast(Message msg) {
         for (WorkerInfo w : workers) {
             try (Socket s = new Socket(w.getHost(), w.getPort());
-                 ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream())) {
+                 ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
+                 ObjectInputStream ois = new ObjectInputStream(s.getInputStream())) {
+
                 oos.writeObject(msg);
-            } catch (IOException e) {
+                oos.flush();
+
+                // Esperar una respuesta simple
+                Message resp = (Message) ois.readObject();
+                System.out.println("Broadcast respuesta del worker " + w.getId() + ": " + resp.getPayload());
+
+            } catch (IOException | ClassNotFoundException e) {
                 System.err.println("Broadcast fallo en " + w + ": " + e);
             }
         }
     }
+
 
     public static void main(String[] args) throws Exception {
         new MasterServer(5555).start();

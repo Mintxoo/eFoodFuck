@@ -50,8 +50,10 @@ public class WorkerHandler implements Runnable {
                     case SALE -> {
                         Sale sale = (Sale) msg.getPayload();
                         worker.handleSale(sale);
-                        // no enviar respuesta para evitar resets
+                        oos.writeObject(new Message(Message.MessageType.RESULT, "OK"));
+                        oos.flush();
                     }
+
                     case REPORT -> {
                         String type = (String) msg.getPayload();
                         MapResult mr = worker.handleReport(type);
