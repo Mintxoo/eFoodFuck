@@ -145,13 +145,21 @@ public class MasterServer {
     private void sendToWorker(WorkerInfo w, Message msg) {
         System.out.println("Master->Worker " + w.getId() + ": enviando " + msg.getType());
         try (Socket s = new Socket(w.getHost(), w.getPort());
-             ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream())) {
+             ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
+             ObjectInputStream ois = new ObjectInputStream(s.getInputStream())) {
+
             oos.writeObject(msg);
             oos.flush();
-        } catch (IOException e) {
+
+            // Esperar y leer respuesta
+            Message resp = (Message) ois.readObject();
+            System.out.println("Respuesta del worker " + w.getId() + ": " + resp.getPayload());
+
+        } catch (IOException | ClassNotFoundException e) {
             System.err.println(msg.getType() + " fallo en " + w + ": " + e);
         }
     }
+
 
     /** Envía FilterSpec y recoge MapResults. */
     public List<MapResult> dispatchMapTasks(FilterSpec fs) {

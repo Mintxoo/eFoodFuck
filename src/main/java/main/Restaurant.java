@@ -64,7 +64,9 @@ public class Restaurant implements Serializable {
 
     public synchronized void addRating(int rating) {
         averageRating = (averageRating * noOfVotes + rating) / (++noOfVotes);
+        System.out.println("Updated rating for " + name + ": " + averageRating);
     }
+
 
     @Override
     public String toString() {
