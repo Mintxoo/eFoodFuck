@@ -1,0 +1,98 @@
+// fichero: restaurants.json
+[
+  {
+    "name": "PizzaFun",
+    "latitude": 40.01,
+    "longitude": 23.01,
+    "category": "pizza",
+    "averageRating": 4.5,
+    "priceCategory": "TWO_DOLLARS",
+    "products": [
+      {
+        "name": "Margherita",
+        "price": 8.99
+      },
+      {
+        "name": "Coke",
+        "price": 1.50
+      }
+    ],
+    "ratings": [ 5, 4 ]
+  },
+  {
+    "name": "SushiPlace",
+    "latitude": 40.04,
+    "longitude": 23.04,
+    "category": "sushi",
+    "averageRating": 4.0,
+    "priceCategory": "THREE_DOLLARS",
+    "products": [
+      {
+        "name": "California Roll",
+        "price": 6.50
+      },
+      {
+        "name": "Green Tea",
+        "price": 2.00
+      }
+    ],
+    "ratings": [ 4, 5 ]
+  },
+  {
+    "name": "BurgerSpot",
+    "latitude": 39.99,
+    "longitude": 23.025,
+    "category": "burger",
+    "averageRating": 3.5,
+    "priceCategory": "ONE_DOLLAR",
+    "products": [
+      {
+        "name": "Cheeseburger",
+        "price": 5.99
+      },
+      {
+        "name": "Fries",
+        "price": 2.50
+      }
+    ],
+    "ratings": [ 3, 4 ]
+  },
+  {
+    "name": "PastaHouse",
+    "latitude": 39.98,
+    "longitude": 22.99,
+    "category": "pasta",
+    "averageRating": 4.2,
+    "priceCategory": "TWO_DOLLARS",
+    "products": [
+      {
+        "name": "Spaghetti Bolognese",
+        "price": 9.99
+      },
+      {
+        "name": "Garlic Bread",
+        "price": 2.99
+      }
+    ],
+    "ratings": [ 4, 5 ]
+  },
+  {
+    "name": "TacoCorner",
+    "latitude": 40.045,
+    "longitude": 22.975,
+    "category": "tacos",
+    "averageRating": 4.8,
+    "priceCategory": "ONE_DOLLAR",
+    "products": [
+      {
+        "name": "Beef Taco",
+        "price": 3.99
+      },
+      {
+        "name": "Salsa",
+        "price": 0.99
+      }
+    ],
+    "ratings": [ 5, 5 ]
+  }
+]

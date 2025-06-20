@@ -3,14 +3,28 @@ package main;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.*;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptEngine;
+import javax.script.ScriptException;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Servidor maestro que coordina Manager, Clientes y Workers.
  */
 public class MasterServer {
     private final int port;
-    private final List<WorkerInfo> workers = new ArrayList<>();
+    private List<Restaurant> allRestaurants = new ArrayList<>();
+    private List<WorkerInfo> workers = new ArrayList<>();
+    private Map<String,WorkerInfo> assignmentMap = new HashMap<>();
 
     public MasterServer(int port) {
         this.port = port;
@@ -26,7 +40,43 @@ public class MasterServer {
         }
     }
 
-    // dentro de MasterServer.java
+    @SuppressWarnings("unchecked")
+    private void loadRestaurantsFromJson(String path) throws IOException, ScriptException {
+        String json = new String(Files.readAllBytes(Paths.get(path)), StandardCharsets.UTF_8);
+        ScriptEngine engine = new ScriptEngineManager().getEngineByName("javascript");
+        Object parsed = engine.eval("Java.asJSONCompatible(" + json + ")");
+
+        List<Object> arr = (List<Object>) parsed;
+        for (Object entry : arr) {
+            Map<String,Object> obj = (Map<String,Object>) entry;
+            String name    = (String) obj.get("name");
+            double lat     = ((Number)obj.get("latitude")).doubleValue();
+            double lon     = ((Number)obj.get("longitude")).doubleValue();
+            String cat     = (String) obj.get("category");
+            double rating  = ((Number)obj.get("averageRating")).doubleValue();
+            PriceCategory pc = PriceCategory.valueOf((String) obj.get("priceCategory"));
+
+            Restaurant r = new Restaurant(name, lat, lon, cat, rating, pc);
+
+            List<Object> prods = (List<Object>) obj.get("products");
+            for (Object p0 : prods) {
+                Map<String,Object> p = (Map<String,Object>) p0;
+                String prodName = (String) p.get("name");
+                double price    = ((Number)p.get("price")).doubleValue();
+                r.addProduct(prodName, price);
+            }
+            if (obj.containsKey("ratings")) {
+                List<Object> rates = (List<Object>) obj.get("ratings");
+                for (Object v : rates) {
+                    r.addRating(((Number)v).intValue());
+                }
+            }
+
+            allRestaurants.add(r);
+        }
+
+        System.out.println("Master: cargados " + allRestaurants.size() + " restaurantes desde JSON");
+    }
 
     private void handleConnection(Socket sock) {
         try (
@@ -52,6 +102,11 @@ public class MasterServer {
                     case ADD_RESTAURANT -> {
                         Restaurant r = (Restaurant) msg.getPayload();
                         addRestaurant(r);
+                        oos.writeObject(new Message(Message.MessageType.RESULT, "OK"));
+                    }
+                    case CREATE_RESTAURANT -> {
+                        Restaurant r = (Restaurant) msg.getPayload();
+                        createRestaurant(r);
                         oos.writeObject(new Message(Message.MessageType.RESULT, "OK"));
                     }
                     case ADD_PRODUCT -> {
@@ -111,6 +166,35 @@ public class MasterServer {
             workers.add(w);
         }
         System.out.println("Worker registrado: " + w);
+        rebalanceAssignments();
+    }
+
+    /** Reasigna TODOS los restaurantes según hash(name)%nWorkers,
+     enviando ADD y REMOVE *solo* cuando cambie la asignación. */
+    private void rebalanceAssignments() {
+        int n = workers.size();
+        for (Restaurant r : allRestaurants) {
+            int slot = Math.abs(r.getName().hashCode()) % n;
+            WorkerInfo target = workers.get(slot);
+            WorkerInfo current = assignmentMap.get(r.getName());
+
+            if (current == null) {
+                // nunca enviado: lo mando al target
+                sendToWorker(target, new Message(Message.MessageType.ADD_RESTAURANT, r));
+                assignmentMap.put(r.getName(), target);
+                System.out.println("Master → ADD " + r.getName() + " a Worker " + slot);
+            }
+            else if (!current.equals(target)) {
+                // había en otro worker: lo quito y lo muevo
+                sendToWorker(current, new Message(Message.MessageType.REMOVE_RESTAURANT, r));
+                sendToWorker(target, new Message(Message.MessageType.ADD_RESTAURANT, r));
+                assignmentMap.put(r.getName(), target);
+                System.out.println("Master → MOVE " + r.getName() +
+                        " de Worker " + workers.indexOf(current) +
+                        " a Worker " + slot);
+            }
+            // si current == target, ya lo tiene y no hacemos nada
+        }
     }
 
     /** Manager Mode: añade un restaurante al worker correspondiente. */
@@ -118,6 +202,28 @@ public class MasterServer {
         int idx = Math.abs(r.getName().hashCode()) % workers.size();
         WorkerInfo w = workers.get(idx);
         sendToWorker(w, new Message(Message.MessageType.ADD_RESTAURANT, r));
+    }
+
+    private synchronized void createRestaurant(Restaurant r) {
+        allRestaurants.add(r);
+        int n = workers.size();
+        if (n == 0) {
+            System.out.println("Master: no hay workers registrados; " +
+                    "restaurante " + r.getName() + " pendiente.");
+            // Podrías guardar pendientes y enviarlos al primer worker que llegue
+            return;
+        }
+
+        int slot = Math.abs(r.getName().hashCode()) % n;
+        WorkerInfo target = workers.get(slot);
+
+        // Registra la asignación
+        assignmentMap.put(r.getName(), target);
+
+        // Envía sólo a ese Worker
+        sendToWorker(target, new Message(Message.MessageType.ADD_RESTAURANT, r));
+        System.out.println("Master: asignado nuevo restaurante "
+                + r.getName() + " al Worker " + slot);
     }
 
     /** Manager Mode: añade un producto. */
@@ -208,6 +314,8 @@ public class MasterServer {
 
 
     public static void main(String[] args) throws Exception {
-        new MasterServer(5555).start();
+        MasterServer server = new MasterServer(5555);
+        server.loadRestaurantsFromJson("../../../../restaurants.json");
+        server.start();
     }
 }

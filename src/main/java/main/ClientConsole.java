@@ -22,7 +22,7 @@ public class ClientConsole {
              BufferedReader console = new BufferedReader(new InputStreamReader(System.in))) {
 
             System.out.println("Conectado a Master en " + host + ":" + port);
-            System.out.println("Comandos: ping, search <lat> - <lon> - <cats> - <minStars> - <priceCat> (pc opcional),");
+            System.out.println("Comandos: ping, search <cats> - <minStars> - <priceCat> (pc opcional),");
             System.out.println("          buy <store> <item:qty,...>, rate <store> <stars>, exit");
 
             final double DEFAULT_LAT = 40.01;

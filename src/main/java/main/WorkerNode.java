@@ -88,6 +88,11 @@ public class WorkerNode {
         System.out.println("Worker " + info.getId() + ": current restaurants = " + restaurants);
     }
 
+    public synchronized void removeRestaurant(Restaurant r) {
+        // Eliminamos por nombre para evitar problemas de referencia
+        restaurants.removeIf(existing -> existing.getName().equals(r.getName()));
+    }
+
     public synchronized void addProduct(String store, String product, double price) {
         restaurants.stream()
                 .filter(r -> r.getName().equals(store))

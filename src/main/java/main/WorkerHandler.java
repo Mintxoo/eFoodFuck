@@ -27,6 +27,10 @@ public class WorkerHandler implements Runnable {
                         worker.addRestaurant((Restaurant) msg.getPayload());
                         oos.writeObject(new Message(Message.MessageType.RESULT, "OK"));
                     }
+                    case REMOVE_RESTAURANT -> {
+                        worker.removeRestaurant((Restaurant) msg.getPayload());
+                        oos.writeObject(new Message(Message.MessageType.RESULT, "OK"));
+                    }
                     case ADD_PRODUCT -> {
                         ProductAction pa = (ProductAction) msg.getPayload();
                         worker.addProduct(pa.getStoreName(), pa.getProductName(), pa.getPrice());

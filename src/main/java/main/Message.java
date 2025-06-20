@@ -10,7 +10,8 @@ public class Message implements Serializable {
         REGISTER, // Manager registra Worker
         TASK, RESULT, // Client busca
         SALE, REPORT, // Client compra + Manager reportes
-        ADD_RESTAURANT, ADD_PRODUCT, REMOVE_PRODUCT, RATE // Funciones Manager Mode
+        ADD_RESTAURANT, ADD_PRODUCT, REMOVE_PRODUCT, RATE, REMOVE_RESTAURANT, // Funciones Manager Mode
+        CREATE_RESTAURANT
     }
 
     private MessageType type;

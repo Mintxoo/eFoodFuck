@@ -48,7 +48,7 @@ public class ManagerConsole {
                                 Double.parseDouble(parts[5]),
                                 PriceCategory.valueOf(parts[6])
                         );
-                        oos.writeObject(new Message(Message.MessageType.ADD_RESTAURANT, r));
+                        oos.writeObject(new Message(Message.MessageType.CREATE_RESTAURANT, r));
                         break;
                     }
                     case "addprod": {
