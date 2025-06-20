@@ -21,7 +21,7 @@ public class WorkerHandler implements Runnable {
         ) {
             Message msg;
             while ((msg = (Message) ois.readObject()) != null) {
-                System.out.println("WorkerHandler recibe: " + msg.getType() + " con payload=" + msg.getPayload());
+                System.out.println("WorkerHandler has received: " + msg.getType());
                 switch (msg.getType()) {
                     case ADD_RESTAURANT -> {
                         worker.addRestaurant((Restaurant) msg.getPayload());
@@ -73,9 +73,9 @@ public class WorkerHandler implements Runnable {
                 oos.flush();
             }
         } catch (EOFException eof) {
-            // cierre normal
+            // Normal close
         } catch (Exception e) {
-            System.err.println("Error en WorkerHandler: " + e);
+            System.err.println("Error in WorkerHandler: " + e);
         }
     }
 }

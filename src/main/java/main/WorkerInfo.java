@@ -2,12 +2,7 @@ package main;
 
 import java.io.Serializable;
 
-/**
- * Representa la información de un nodo Worker:
- * - id único
- * - host donde escucha
- * - puerto donde escucha
- */
+
 public class WorkerInfo implements Serializable {
     private static final long serialVersionUID = 1L;
 

@@ -7,10 +7,10 @@ public class Message implements Serializable {
 
     public enum MessageType {
         PING, PONG,
-        REGISTER, // Manager registra Worker
-        TASK, RESULT, // Client busca
-        SALE, REPORT, // Client compra + Manager reportes
-        ADD_RESTAURANT, ADD_PRODUCT, REMOVE_PRODUCT, RATE, REMOVE_RESTAURANT, // Funciones Manager Mode
+        REGISTER,
+        TASK, RESULT,
+        SALE, REPORT,
+        ADD_RESTAURANT, ADD_PRODUCT, REMOVE_PRODUCT, RATE, REMOVE_RESTAURANT,
         CREATE_RESTAURANT
     }
 

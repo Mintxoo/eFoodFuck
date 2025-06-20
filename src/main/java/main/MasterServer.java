@@ -3,9 +3,6 @@ package main;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptEngine;
-import javax.script.ScriptException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -17,9 +14,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Servidor maestro que coordina Manager, Clientes y Workers.
- */
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+
+
 public class MasterServer {
     private final int port;
     private List<Restaurant> allRestaurants = new ArrayList<>();
@@ -32,7 +30,7 @@ public class MasterServer {
 
     public void start() throws Exception {
         try (ServerSocket server = new ServerSocket(port)) {
-            System.out.println("MasterServer escuchando en " + port);
+            System.out.println("MasterServer listening on " + port);
             while (true) {
                 Socket sock = server.accept();
                 new Thread(() -> handleConnection(sock)).start();
@@ -40,42 +38,100 @@ public class MasterServer {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private void loadRestaurantsFromJson(String path) throws IOException, ScriptException {
-        String json = new String(Files.readAllBytes(Paths.get(path)), StandardCharsets.UTF_8);
-        ScriptEngine engine = new ScriptEngineManager().getEngineByName("javascript");
-        Object parsed = engine.eval("Java.asJSONCompatible(" + json + ")");
+    private void loadRestaurantsFromJson(String path) throws IOException {
+        String json = Files.readString(Paths.get(path), StandardCharsets.UTF_8)
+                .replaceAll("[\\n\\r]", " ")
+                .trim();
 
-        List<Object> arr = (List<Object>) parsed;
-        for (Object entry : arr) {
-            Map<String,Object> obj = (Map<String,Object>) entry;
-            String name    = (String) obj.get("name");
-            double lat     = ((Number)obj.get("latitude")).doubleValue();
-            double lon     = ((Number)obj.get("longitude")).doubleValue();
-            String cat     = (String) obj.get("category");
-            double rating  = ((Number)obj.get("averageRating")).doubleValue();
-            PriceCategory pc = PriceCategory.valueOf((String) obj.get("priceCategory"));
+        int b0 = json.indexOf('[');
+        int b1 = json.lastIndexOf(']');
+        if (b0 < 0 || b1 < 0 || b1 <= b0) {
+            throw new IOException("JSON format invalid");
+        }
+        String body = json.substring(b0 + 1, b1);
+
+        List<String> objs = new ArrayList<>();
+        int depth = 0, start = -1;
+        for (int i = 0; i < body.length(); i++) {
+            char c = body.charAt(i);
+            if (c == '{') {
+                if (depth == 0) start = i;
+                depth++;
+            } else if (c == '}') {
+                depth--;
+                if (depth == 0 && start >= 0) {
+                    objs.add(body.substring(start, i + 1));
+                    start = -1;
+                }
+            }
+        }
+
+        for (String obj : objs) {
+            String name   = extractString(obj, "name");
+            double lat    = extractDouble(obj, "latitude");
+            double lon    = extractDouble(obj, "longitude");
+            String cat    = extractString(obj, "category");
+            double rating = extractDouble(obj, "averageRating");
+            PriceCategory pc = PriceCategory.valueOf(
+                    extractString(obj, "priceCategory")
+            );
 
             Restaurant r = new Restaurant(name, lat, lon, cat, rating, pc);
 
-            List<Object> prods = (List<Object>) obj.get("products");
-            for (Object p0 : prods) {
-                Map<String,Object> p = (Map<String,Object>) p0;
-                String prodName = (String) p.get("name");
-                double price    = ((Number)p.get("price")).doubleValue();
-                r.addProduct(prodName, price);
+            String prodsBlock = extractArrayBlock(obj, "products");
+            if (!prodsBlock.isEmpty()) {
+                int pd = 0, ps = -1;
+                for (int i = 0; i < prodsBlock.length(); i++) {
+                    char ch = prodsBlock.charAt(i);
+                    if (ch == '{') {
+                        if (pd == 0) ps = i;
+                        pd++;
+                    } else if (ch == '}') {
+                        pd--;
+                        if (pd == 0 && ps >= 0) {
+                            String pObj = prodsBlock.substring(ps, i + 1);
+                            String prodName = extractString(pObj, "name");
+                            double price    = extractDouble(pObj, "price");
+                            r.addProduct(prodName, price);
+                            ps = -1;
+                        }
+                    }
+                }
             }
-            if (obj.containsKey("ratings")) {
-                List<Object> rates = (List<Object>) obj.get("ratings");
-                for (Object v : rates) {
-                    r.addRating(((Number)v).intValue());
+
+            String ratesBlock = extractArrayBlock(obj, "ratings");
+            if (!ratesBlock.isEmpty()) {
+                for (String num : ratesBlock.split(",")) {
+                    try {
+                        r.addRating(Integer.parseInt(num.trim()));
+                    } catch (NumberFormatException ignored) {}
                 }
             }
 
             allRestaurants.add(r);
         }
 
-        System.out.println("Master: cargados " + allRestaurants.size() + " restaurantes desde JSON");
+        System.out.println("Master: saved "
+                + allRestaurants.size()
+                + " restaurants from JSON");
+    }
+
+    private static String extractString(String src, String key) {
+        Pattern p = Pattern.compile("\"" + key + "\"\\s*:\\s*\"([^\"]*)\"");
+        Matcher m = p.matcher(src);
+        return m.find() ? m.group(1) : "";
+    }
+
+    private static double extractDouble(String src, String key) {
+        Pattern p = Pattern.compile("\"" + key + "\"\\s*:\\s*([-+]?\\d*\\.?\\d+)");
+        Matcher m = p.matcher(src);
+        return m.find() ? Double.parseDouble(m.group(1)) : 0;
+    }
+
+    private static String extractArrayBlock(String src, String key) {
+        Pattern p = Pattern.compile("\"" + key + "\"\\s*:\\s*\\[(.*?)\\]", Pattern.DOTALL);
+        Matcher m = p.matcher(src);
+        return m.find() ? m.group(1) : "";
     }
 
     private void handleConnection(Socket sock) {
@@ -84,10 +140,9 @@ public class MasterServer {
                 ObjectInputStream ois = new ObjectInputStream(sock.getInputStream());
                 ObjectOutputStream oos = new ObjectOutputStream(sock.getOutputStream())
         ) {
-            // Leemos un único mensaje al abrir la conexión
+
             Message msg = (Message) ois.readObject();
 
-            // Si es un registro de Worker, lo procesamos y cerramos
             if (msg.getType() == Message.MessageType.REGISTER) {
                 WorkerInfo w = (WorkerInfo) msg.getPayload();
                 registerWorker(w);
@@ -96,7 +151,6 @@ public class MasterServer {
                 return;
             }
 
-            // En otro caso, atendemos a Manager/Client en bucle
             do {
                 switch (msg.getType()) {
                     case ADD_RESTAURANT -> {
@@ -149,18 +203,16 @@ public class MasterServer {
                     }
                 }
                 oos.flush();
-                // Leemos siguiente mensaje; EOFException finalizará el bucle
+
             } while ((msg = (Message) ois.readObject()) != null);
 
         } catch (EOFException eof) {
-            // Manager o Client cerró la conexión (esperado)
+            // Manager or Client closed connection
         } catch (Exception e) {
             System.err.println("Error en conexión: " + e.getMessage());
         }
     }
 
-
-    /** Registra un Worker. */
     public void registerWorker(WorkerInfo w) {
         synchronized (workers) {
             workers.add(w);
@@ -169,8 +221,6 @@ public class MasterServer {
         rebalanceAssignments();
     }
 
-    /** Reasigna TODOS los restaurantes según hash(name)%nWorkers,
-     enviando ADD y REMOVE *solo* cuando cambie la asignación. */
     private void rebalanceAssignments() {
         int n = workers.size();
         for (Restaurant r : allRestaurants) {
@@ -179,25 +229,24 @@ public class MasterServer {
             WorkerInfo current = assignmentMap.get(r.getName());
 
             if (current == null) {
-                // nunca enviado: lo mando al target
+
                 sendToWorker(target, new Message(Message.MessageType.ADD_RESTAURANT, r));
                 assignmentMap.put(r.getName(), target);
-                System.out.println("Master → ADD " + r.getName() + " a Worker " + slot);
+                System.out.println("Master → ADD " + r.getName() + " to Worker " + slot);
             }
             else if (!current.equals(target)) {
-                // había en otro worker: lo quito y lo muevo
+
                 sendToWorker(current, new Message(Message.MessageType.REMOVE_RESTAURANT, r));
                 sendToWorker(target, new Message(Message.MessageType.ADD_RESTAURANT, r));
                 assignmentMap.put(r.getName(), target);
                 System.out.println("Master → MOVE " + r.getName() +
-                        " de Worker " + workers.indexOf(current) +
-                        " a Worker " + slot);
+                        " from Worker " + workers.indexOf(current) +
+                        " to Worker " + slot);
             }
-            // si current == target, ya lo tiene y no hacemos nada
+            // if current == target, it already has so we do nothing
         }
     }
 
-    /** Manager Mode: añade un restaurante al worker correspondiente. */
     public void addRestaurant(Restaurant r) {
         int idx = Math.abs(r.getName().hashCode()) % workers.size();
         WorkerInfo w = workers.get(idx);
@@ -208,48 +257,41 @@ public class MasterServer {
         allRestaurants.add(r);
         int n = workers.size();
         if (n == 0) {
-            System.out.println("Master: no hay workers registrados; " +
-                    "restaurante " + r.getName() + " pendiente.");
-            // Podrías guardar pendientes y enviarlos al primer worker que llegue
+            System.out.println("Master: no workers registered; " +
+                    "restaurant " + r.getName());
             return;
         }
 
         int slot = Math.abs(r.getName().hashCode()) % n;
         WorkerInfo target = workers.get(slot);
 
-        // Registra la asignación
         assignmentMap.put(r.getName(), target);
 
-        // Envía sólo a ese Worker
         sendToWorker(target, new Message(Message.MessageType.ADD_RESTAURANT, r));
-        System.out.println("Master: asignado nuevo restaurante "
-                + r.getName() + " al Worker " + slot);
+        System.out.println("Master: new restaurant assigned"
+                + r.getName() + " to Worker " + slot);
     }
 
-    /** Manager Mode: añade un producto. */
     public void addProduct(ProductAction pa) {
         int idx = Math.abs(pa.getStoreName().hashCode()) % workers.size();
         WorkerInfo w = workers.get(idx);
         sendToWorker(w, new Message(Message.MessageType.ADD_PRODUCT, pa));
     }
 
-    /** Manager Mode: remueve un producto. */
     public void removeProduct(ProductAction pa) {
         int idx = Math.abs(pa.getStoreName().hashCode()) % workers.size();
         WorkerInfo w = workers.get(idx);
         sendToWorker(w, new Message(Message.MessageType.REMOVE_PRODUCT, pa));
     }
 
-    /** Manager Mode: valora un restaurante. */
     public void rateRestaurant(Rating rt) {
         int idx = Math.abs(rt.getStoreName().hashCode()) % workers.size();
         WorkerInfo w = workers.get(idx);
         sendToWorker(w, new Message(Message.MessageType.RATE, rt));
     }
 
-    // En MasterServer.java, justo al inicio de sendToWorker():
     private void sendToWorker(WorkerInfo w, Message msg) {
-        System.out.println("Master->Worker " + w.getId() + ": enviando " + msg.getType());
+        System.out.println("Master->Worker " + w.getId() + ": send " + msg.getType());
         try (Socket s = new Socket(w.getHost(), w.getPort());
              ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
              ObjectInputStream ois = new ObjectInputStream(s.getInputStream())) {
@@ -257,42 +299,36 @@ public class MasterServer {
             oos.writeObject(msg);
             oos.flush();
 
-            // Esperar y leer respuesta
             Message resp = (Message) ois.readObject();
-            System.out.println("Respuesta del worker " + w.getId() + ": " + resp.getPayload());
+            System.out.println("Response from worker " + w.getId() + ": " + resp.getPayload());
 
         } catch (IOException | ClassNotFoundException e) {
-            System.err.println(msg.getType() + " fallo en " + w + ": " + e);
+            System.err.println(msg.getType() + " Error in " + w + ": " + e);
         }
     }
 
-
-    /** Envía FilterSpec y recoge MapResults. */
     public List<MapResult> dispatchMapTasks(FilterSpec fs) {
         List<MapResult> res = new ArrayList<>();
         for (WorkerInfo w : workers) {
             try { res.add(new MapTask(fs, w).execute()); }
-            catch (Exception e) { System.err.println("MapTask fallo en " + w + ": " + e); }
+            catch (Exception e) { System.err.println("MapTask failed in " + w + ": " + e); }
         }
         return res;
     }
 
-    /** Envía petición de reporte y recoge MapResults de ventas. */
     public List<MapResult> dispatchSalesReports(String type) {
         List<MapResult> res = new ArrayList<>();
         for (WorkerInfo w : workers) {
             try { res.add(new ReportTask(type, w).execute()); }
-            catch (Exception e) { System.err.println("ReportTask fallo en " + w + ": " + e); }
+            catch (Exception e) { System.err.println("ReportTask failed in " + w + ": " + e); }
         }
         return res;
     }
 
-    /** Combina parciales usando ReduceTask. */
     public ReduceResult reduce(List<MapResult> partials) {
         return new ReduceTask().combine(partials);
     }
 
-    /** Reenvía un mensaje a todos los workers (sale, purchase). */
     public void broadcast(Message msg) {
         for (WorkerInfo w : workers) {
             try (Socket s = new Socket(w.getHost(), w.getPort());
@@ -302,12 +338,11 @@ public class MasterServer {
                 oos.writeObject(msg);
                 oos.flush();
 
-                // Esperar una respuesta simple
                 Message resp = (Message) ois.readObject();
-                System.out.println("Broadcast respuesta del worker " + w.getId() + ": " + resp.getPayload());
+                System.out.println("Broadcast response from worker " + w.getId() + ": " + resp.getPayload());
 
             } catch (IOException | ClassNotFoundException e) {
-                System.err.println("Broadcast fallo en " + w + ": " + e);
+                System.err.println("Broadcast failed in " + w + ": " + e);
             }
         }
     }
@@ -315,7 +350,7 @@ public class MasterServer {
 
     public static void main(String[] args) throws Exception {
         MasterServer server = new MasterServer(5555);
-        server.loadRestaurantsFromJson("../../../../restaurants.json");
+        server.loadRestaurantsFromJson("restaurants.json");
         server.start();
     }
 }

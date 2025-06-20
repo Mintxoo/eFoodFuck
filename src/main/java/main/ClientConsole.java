@@ -4,13 +4,11 @@ import java.io.*;
 import java.net.Socket;
 import java.util.*;
 
-/**
- * CLI sencilla para enviar comandos al Master.
- */
+
 public class ClientConsole {
     public static void main(String[] args) throws Exception {
         if (args.length < 2) {
-            System.err.println("Uso: ClientConsole <host> <port>");
+            System.err.println("Use: ClientConsole <host> <port>");
             return;
         }
         String host = args[0];
@@ -21,8 +19,9 @@ public class ClientConsole {
              ObjectInputStream ois = new ObjectInputStream(sock.getInputStream());
              BufferedReader console = new BufferedReader(new InputStreamReader(System.in))) {
 
-            System.out.println("Conectado a Master en " + host + ":" + port);
-            System.out.println("Comandos: ping, search <cats> - <minStars> - <priceCat> (pc opcional),");
+            System.out.println("Connected to Master in " + host + ":" + port);
+            System.out.println("Commands: ping,");
+            System.out.println("          search <cats> - <minStars> - [priceCat] (pc optional),");
             System.out.println("          buy <store> <item:qty,...>, rate <store> <stars>, exit");
 
             final double DEFAULT_LAT = 40.01;
@@ -41,18 +40,17 @@ public class ClientConsole {
                         break;
 
                     case "search": {
-                        // Nuevo formato: search <cats> - <minStars> - <priceCat> (pc opcional)
                         if (parts.length < 2) {
-                            System.out.println("Uso: search <cats> - <minStars> - <priceCat> (pc opcional)");
+                            System.out.println("Use: search <cats> - <minStars> - [priceCat] (pc optional)");
                             continue;
                         }
                         String[] fields = parts[1].split("\s*-\s*", -1);
-                        // Debe haber al menos 2 campos (cats y minStars), hasta 3 con priceCat
+
                         if (fields.length < 2 || fields.length > 3) {
-                            System.out.println("Busq. incompleta, se necesitan 2 a 3 campos separados por '-'");
+                            System.out.println("Uncompleted search, its needed from 2 to 3 fields separated by '-'");
                             continue;
                         }
-                        // fields[0]=cats, fields[1]=minStars, fields[2]=priceCat (opcional)
+
                         Set<String> catSet = new HashSet<>();
                         if (!fields[0].isEmpty()) {
                             catSet = new HashSet<>(Arrays.asList(fields[0].split(",")));
@@ -65,13 +63,13 @@ public class ClientConsole {
                         if (fields.length == 3 && !fields[2].isEmpty()) {
                             pc = PriceCategory.valueOf(fields[2]);
                         }
-                        // Usar lat/lon por defecto, filtrar solo cuando sea necesario
+
                         FilterSpec fs = new FilterSpec(
                                 DEFAULT_LAT,
                                 DEFAULT_LON,
                                 catSet,
                                 minStars != null ? minStars : 0,
-                                pc // null para skipPrice
+                                pc
                         );
                         oos.writeObject(new Message(Message.MessageType.TASK, fs));
                         break;
@@ -79,7 +77,7 @@ public class ClientConsole {
 
                     case "buy": {
                         if (parts.length < 2) {
-                            System.out.println("Uso: buy <store> <item:qty,...>");
+                            System.out.println("Use: buy <store> <item:qty,...>");
                             continue;
                         }
                         String[] tokens = parts[1].split("\\s+", 2);
@@ -98,12 +96,12 @@ public class ClientConsole {
 
                     case "rate": {
                         if (parts.length < 2) {
-                            System.out.println("Uso: rate <store> <stars>");
+                            System.out.println("Use: rate <store> <stars>");
                             continue;
                         }
                         String[] tokens = parts[1].split("\\s+");
                         if (tokens.length < 2) {
-                            System.out.println("Uso: rate <store> <stars>");
+                            System.out.println("Use: rate <store> <stars>");
                             continue;
                         }
                         String store = tokens[0];
@@ -114,7 +112,7 @@ public class ClientConsole {
                     }
 
                     default:
-                        System.out.println("Comando desconocido: " + cmd);
+                        System.out.println("Unexpected command: " + cmd);
                         continue;
                 }
 
@@ -122,7 +120,7 @@ public class ClientConsole {
                 Message resp = (Message) ois.readObject();
                 System.out.println("Master> " + resp.getPayload());
             }
-            System.out.println("Saliendo...");
+            System.out.println("Exiting...");
         }
     }
 }

@@ -60,16 +60,16 @@ public class ManagerHandler implements Runnable, Serializable {
                     default -> {
                         oos.writeObject(new Message(
                                 Message.MessageType.RESULT,
-                                "ERROR: comando no soportado por ManagerHandler"
+                                "ERROR: command not recognized"
                         ));
                     }
                 }
                 oos.flush();
             }
         } catch (EOFException eof) {
-            // manager cerró conexión
+            // Manager closed connection
         } catch (Exception e) {
-            System.err.println("Error en ManagerHandler: " + e);
+            System.err.println("Error in ManagerHandler: " + e);
         }
     }
 }

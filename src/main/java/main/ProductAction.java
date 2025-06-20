@@ -7,7 +7,7 @@ public class ProductAction implements Serializable {
 
     private final String storeName;
     private final String productName;
-    private final Double price; // null if REMOVE_PRODUCT
+    private final Double price;
 
     public ProductAction(String storeName, String productName, Double price) {
         this.storeName = storeName;

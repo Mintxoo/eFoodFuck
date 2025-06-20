@@ -4,9 +4,7 @@ import java.io.*;
 import java.net.Socket;
 import java.util.Objects;
 
-/**
- * Envía un TASK al Worker y recibe un MapResult.
- */
+
 public class MapTask implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -23,14 +21,12 @@ public class MapTask implements Serializable {
              ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
              ObjectInputStream  ois = new ObjectInputStream(s.getInputStream())) {
 
-            // Enviamos el mensaje TASK con el FilterSpec
             oos.writeObject(new Message(Message.MessageType.TASK, filters));
             oos.flush();
 
-            // Leemos la respuesta
             Message resp = (Message) ois.readObject();
             if (resp.getType() != Message.MessageType.RESULT) {
-                throw new IOException("MapTask: respuesta inesperada: " + resp.getType());
+                throw new IOException("MapTask: unexpected response: " + resp.getType());
             }
             return (MapResult) resp.getPayload();
         }

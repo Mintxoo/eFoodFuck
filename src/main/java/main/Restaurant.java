@@ -5,9 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Información de restaurante, con productos y valoraciones.
- */
+
 public class Restaurant implements Serializable {
     private static final long serialVersionUID = 1L;
 

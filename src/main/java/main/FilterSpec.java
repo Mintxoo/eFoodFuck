@@ -3,14 +3,7 @@ package main;
 import java.io.Serializable;
 import java.util.Set;
 
-/**
- * Especifica los criterios de búsqueda de un cliente:
- * - Coordenadas
- * - Radio fijo de 5 km
- * - Categorías de comida
- * - Estrellas mínimas
- * - Categoría de precio
- */
+
 public class FilterSpec implements Serializable {
     private static final long serialVersionUID = 1L;
     private static final double RADIUS_KM = 5.0;

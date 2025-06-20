@@ -4,9 +4,7 @@ import java.io.*;
 import java.net.Socket;
 import java.util.List;
 
-/**
- * Atiende PING, TASK, SALE y RATE desde el cliente.
- */
+
 public class ClientHandler implements Runnable, Serializable {
     private static final long serialVersionUID = 1L;
     private final Socket socket;
@@ -47,15 +45,15 @@ public class ClientHandler implements Runnable, Serializable {
                     default ->
                             oos.writeObject(new Message(
                                     Message.MessageType.RESULT,
-                                    "ERROR: comando no soportado por ClientHandler"
+                                    "ERROR: not recognized command"
                             ));
                 }
                 oos.flush();
             }
         } catch (EOFException eof) {
-            // cliente cerró conexión
+            // Manager closed connection
         } catch (Exception e) {
-            System.err.println("Error en ClientHandler: " + e);
+            System.err.println("ClientHandler Error: " + e);
         } finally {
             try { socket.close(); } catch (IOException ignored) {}
         }

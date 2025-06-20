@@ -4,9 +4,7 @@ package main;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * Resultado parcial del Map: lista de restaurantes y mapa de ventas.
- */
+
 public class MapResult implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -17,7 +15,7 @@ public class MapResult implements Serializable {
     }
 
     public void addRestaurant(Restaurant r) {
-        // Sólo lo añadimos si no existe ya (mismo nombre)
+
         boolean exists = restaurants.stream()
                 .anyMatch(existing -> existing.getName().equals(r.getName()));
         if (!exists) {
@@ -38,9 +36,7 @@ public class MapResult implements Serializable {
         return Collections.unmodifiableMap(ventasPorKey);
     }
 
-    /**
-     * Fusiona otro MapResult en este.
-     */
+
     public void merge(MapResult other) {
         other.restaurants.forEach(this.restaurants::add);
         other.ventasPorKey.forEach(

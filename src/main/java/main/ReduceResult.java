@@ -3,9 +3,7 @@ package main;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * Resultado final del Reduce: lista de restaurantes y mapa de ventas agregadas.
- */
+
 public class ReduceResult implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -15,7 +13,7 @@ public class ReduceResult implements Serializable {
     public ReduceResult(List<Restaurant> restaurants, Map<String, Integer> ventasPorKey) {
         this.restaurants = new ArrayList<>(restaurants);
         this.ventasPorKey = new HashMap<>(ventasPorKey);
-        // suma total
+
         int total = this.ventasPorKey.values().stream()
                 .mapToInt(Integer::intValue)
                 .sum();
